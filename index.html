@@ -2,7 +2,10 @@
 <html lang="zh-CN" data-theme="light">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="theme-color" content="#6366F1" />
   <title>SPC — 安全生产力中枢</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
@@ -56,6 +59,54 @@
     #lockscreen.visible { display:flex; }
     .overlay { position:fixed; inset:0; z-index:50000; display:none; }
     .overlay.visible { display:flex; }
+    
+    /* ===== 移动端适配 ===== */
+    @media (max-width: 768px) {
+      body { 
+        -webkit-overflow-scrolling: touch; 
+        overscroll-behavior: none;
+      }
+      .sidebar { 
+        position: fixed !important; 
+        left: -280px !important;
+        width: 280px !important;
+        height: 100vh !important;
+        z-index: 9999 !important;
+        transition: left 0.3s ease !important;
+      }
+      .sidebar.mobile-open { 
+        left: 0 !important; 
+      }
+      .main-content { 
+        width: 100% !important; 
+        padding: 1rem !important;
+      }
+      .auth-modal {
+        width: 90% !important;
+        max-width: 400px !important;
+        margin: 1rem !important;
+      }
+      .btn { 
+        min-height: 44px;
+        touch-action: manipulation;
+      }
+      input, select, textarea {
+        font-size: 16px !important; /* 防止iOS缩放 */
+      }
+      .card {
+        padding: 1rem !important;
+        border-radius: 12px !important;
+      }
+      h1 { font-size: 1.75rem !important; }
+      h2 { font-size: 1.5rem !important; }
+    }
+    
+    /* 移动端底部安全区域 */
+    @supports (padding-bottom: env(safe-area-inset-bottom)) {
+      .sidebar, .bottom-nav {
+        padding-bottom: env(safe-area-inset-bottom);
+      }
+    }
   </style>
 </head>
 <body class="font-sans antialiased h-screen flex">
@@ -95,7 +146,7 @@
           </div>
           <div class="mb-4" id="cloud-url-container" style="display:none;">
             <label class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1">云端服务器地址</label>
-            <input type="url" id="login-cloud-url" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 focus:ring-2 focus:ring-cyan-500 focus:border-transparent outline-none transition" placeholder="https://your-server.com">
+            <input type="url" id="login-cloud-url" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 focus:ring-2 focus:ring-cyan-500 focus:border-transparent outline-none transition" placeholder="https://your-server.com" value="http://144.48.182.92:3000">
           </div>
           <button onclick="AuthUI.login()" class="w-full py-3 bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-medium rounded-xl hover:shadow-lg hover:shadow-cyan-500/25 transition-all">登录</button>
         </div>
@@ -114,7 +165,7 @@
             <label class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">数据存储模式</label>
             <div class="flex gap-3">
               <label class="flex-1 cursor-pointer">
-                <input type="radio" name="storage-mode" value="local" checked class="peer sr-only" onchange="AuthUI.toggleCloudUrl(false)">
+                <input type="radio" name="storage-mode" value="local" class="peer sr-only" onchange="AuthUI.toggleCloudUrl(false)">
                 <div class="p-3 rounded-xl border-2 border-slate-200 dark:border-slate-600 peer-checked:border-cyan-500 peer-checked:bg-cyan-50 dark:peer-checked:bg-cyan-900/20 transition">
                   <div class="text-center">
                     <svg class="w-6 h-6 mx-auto mb-1 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4"/></svg>
@@ -124,7 +175,7 @@
                 </div>
               </label>
               <label class="flex-1 cursor-pointer">
-                <input type="radio" name="storage-mode" value="cloud" class="peer sr-only" onchange="AuthUI.toggleCloudUrl(true)">
+                <input type="radio" name="storage-mode" value="cloud" checked class="peer sr-only" onchange="AuthUI.toggleCloudUrl(true)">
                 <div class="p-3 rounded-xl border-2 border-slate-200 dark:border-slate-600 peer-checked:border-cyan-500 peer-checked:bg-cyan-50 dark:peer-checked:bg-cyan-900/20 transition">
                   <div class="text-center">
                     <svg class="w-6 h-6 mx-auto mb-1 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z"/></svg>
@@ -137,7 +188,7 @@
           </div>
           <div class="mb-4" id="reg-cloud-url-container" style="display:none;">
             <label class="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1">您的服务器地址</label>
-            <input type="url" id="reg-cloud-url" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 focus:ring-2 focus:ring-cyan-500 focus:border-transparent outline-none transition" placeholder="https://your-server.com">
+            <input type="url" id="reg-cloud-url" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 focus:ring-2 focus:ring-cyan-500 focus:border-transparent outline-none transition" placeholder="https://your-server.com" value="http://144.48.182.92:3000">
             <p class="text-xs text-slate-500 mt-1">您需要部署自己的 SPC 服务器来同步数据</p>
           </div>
           <button onclick="AuthUI.register()" class="w-full py-3 bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-medium rounded-xl hover:shadow-lg hover:shadow-cyan-500/25 transition-all">创建账户</button>
@@ -154,6 +205,23 @@
       </div>
     </div>
   </div>
+
+  <!-- 移动端菜单按钮 -->
+  <button id="mobile-menu-btn" class="md:hidden fixed top-4 left-4 z-50 p-2 bg-white dark:bg-slate-800 rounded-lg shadow-lg border border-slate-200 dark:border-slate-700" onclick="toggleMobileSidebar()">
+    <svg class="w-6 h-6 text-slate-700 dark:text-slate-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+    </svg>
+  </button>
+
+  <!-- 移动端侧边栏遮罩 -->
+  <div id="sidebar-overlay" class="md:hidden fixed inset-0 bg-black/50 z-30 hidden" onclick="toggleMobileSidebar()"></div>
+
+  <script>
+    function toggleMobileSidebar() {
+      document.getElementById('sidebar').classList.toggle('mobile-open');
+      document.getElementById('sidebar-overlay').classList.toggle('hidden');
+    }
+  </script>
 
   <!-- 顶部用户栏 -->
   <div id="user-bar" class="fixed top-4 right-4 z-50 hidden">
@@ -187,15 +255,15 @@
         <svg class="w-[18px] h-[18px]" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75"/></svg>
         <span class="nav-tooltip">主页</span>
       </button>
-      <button class="sidebar-item relative w-full h-10 rounded-xl flex items-center justify-center group" onclick="window.location.href='safe/index.html'" style="color:var(--text-tertiary)">
+      <button class="sidebar-item relative w-full h-10 rounded-xl flex items-center justify-center group" onclick="SPC.navigate('safe')" style="color:var(--text-tertiary)">
         <svg class="w-[18px] h-[18px]" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z"/></svg>
         <span class="nav-tooltip">保险箱</span>
       </button>
-      <button class="sidebar-item relative w-full h-10 rounded-xl flex items-center justify-center group" onclick="window.location.href='plan/index.html'" style="color:var(--text-tertiary)">
+      <button class="sidebar-item relative w-full h-10 rounded-xl flex items-center justify-center group" onclick="SPC.navigate('plan')" style="color:var(--text-tertiary)">
         <svg class="w-[18px] h-[18px]" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5"/></svg>
         <span class="nav-tooltip">时间规划</span>
       </button>
-      <button class="sidebar-item relative w-full h-10 rounded-xl flex items-center justify-center group" onclick="window.location.href='note/index.html'" style="color:var(--text-tertiary)">
+      <button class="sidebar-item relative w-full h-10 rounded-xl flex items-center justify-center group" onclick="SPC.navigate('note')" style="color:var(--text-tertiary)">
         <svg class="w-[18px] h-[18px]" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/></svg>
         <span class="nav-tooltip">笔记</span>
       </button>

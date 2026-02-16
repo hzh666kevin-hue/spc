@@ -30,6 +30,12 @@
 
 <!-- ===== 侧栏 ===== -->
 <aside class="w-[200px] min-w-[200px] h-full flex flex-col border-r" style="background:var(--bg-secondary);border-color:var(--border-default)">
+  <div class="p-3 border-b" style="border-color:var(--border-default)">
+    <button onclick="if(window.parent !== window){window.parent.postMessage({action:'navigate',module:'home'},'*')}else{window.location.href='../index.html'}" class="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-[var(--bg-tertiary)] transition-colors">
+      <svg class="w-4 h-4" style="color:var(--text-tertiary)" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"/></svg>
+      <span class="text-xs font-medium" style="color:var(--text-secondary)">返回主页</span>
+    </button>
+  </div>
   <div class="p-3">
     <div class="flex items-center gap-2 mb-3">
       <div class="w-7 h-7 rounded-lg bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center">

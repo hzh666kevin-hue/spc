@@ -55,6 +55,13 @@ const SPC = (() => {
   async function boot() {
     console.log('%c[SPC] 内核引导中...', 'color: #2563eb; font-weight: bold; font-size: 13px');
     const t0 = performance.now();
+    
+    // 监听 iframe 消息（用于子页面导航）
+    window.addEventListener('message', (event) => {
+      if (event.data && event.data.action === 'navigate') {
+        navigate(event.data.module || 'home');
+      }
+    });
 
     // 首先初始化账户系统
     AuthUI.init();
@@ -626,6 +633,9 @@ const SPC = (() => {
       document.getElementById('auth-modal').classList.remove('hidden');
       document.getElementById('user-bar').classList.add('hidden');
       document.getElementById('sidebar').classList.add('hidden');
+      
+      // 默认显示云端服务器地址（因为用户已有服务器）
+      this.toggleCloudUrl(true);
       
       // 检查是否有已有用户
       const users = AuthService.getAllUsers();
