@@ -16,14 +16,19 @@ const crypto = require('crypto');
 const PORT = process.env.PORT || 3000;
 const DATA_FILE = path.join(__dirname, 'data', 'store.json');
 
+console.log('SPC Server 启动中...');
+console.log('数据文件路径:', DATA_FILE);
+
 // 确保数据目录存在
 const dataDir = path.join(__dirname, 'data');
 if (!fs.existsSync(dataDir)) {
+  console.log('创建数据目录...');
   fs.mkdirSync(dataDir, { recursive: true });
 }
 
 // 初始化数据文件
 if (!fs.existsSync(DATA_FILE)) {
+  console.log('初始化数据文件...');
   fs.writeFileSync(DATA_FILE, JSON.stringify({
     notes: [],
     tasks: [],
@@ -37,13 +42,18 @@ function readData() {
   try {
     return JSON.parse(fs.readFileSync(DATA_FILE, 'utf-8'));
   } catch (e) {
+    console.error('读取数据失败:', e);
     return { notes: [], tasks: [], vault: [], settings: {} };
   }
 }
 
 // 写入数据
 function writeData(data) {
-  fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2));
+  try {
+    fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2));
+  } catch (e) {
+    console.error('写入数据失败:', e);
+  }
 }
 
 // CORS 头
@@ -55,185 +65,236 @@ function setCorsHeaders(res) {
 
 // 解析请求体
 function parseBody(req) {
-  return new Promise((resolve, reject) => {
+  return new Promise((resolve) => {
     let body = '';
-    req.on('data', chunk => body += chunk);
+    req.on('data', chunk => {
+      body += chunk.toString();
+    });
     req.on('end', () => {
       try {
-        resolve(body ? JSON.parse(body) : {});
+        if (body) {
+          resolve(JSON.parse(body));
+        } else {
+          resolve({});
+        }
       } catch (e) {
-        reject(e);
+        console.error('JSON解析失败:', e, 'body:', body);
+        resolve({});
       }
     });
-    req.on('error', reject);
+    req.on('error', (e) => {
+      console.error('请求体读取失败:', e);
+      resolve({});
+    });
   });
 }
 
-// 简单认证检查 (可配置)
-function checkAuth(req) {
-  // 简化版本: 不做强制认证
-  // 可根据需要添加 token 验证
-  return true;
+// 获取静态文件
+function getStaticFile(filePath) {
+  const pathsToTry = [
+    path.join(__dirname, 'public', filePath),
+    path.join(__dirname, filePath)
+  ];
+  
+  for (const tryPath of pathsToTry) {
+    if (fs.existsSync(tryPath)) {
+      try {
+        return fs.readFileSync(tryPath);
+      } catch (e) {
+        // 继续尝试下一个路径
+      }
+    }
+  }
+  return null;
 }
 
 // API 路由处理
-async function handleApi(req, res) {
+const server = http.createServer(async (req, res) => {
   setCorsHeaders(res);
   
+  // 处理 OPTIONS 预检请求
   if (req.method === 'OPTIONS') {
     res.writeHead(204);
     res.end();
     return;
   }
 
-  if (!checkAuth(req)) {
-    res.writeHead(401, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ error: 'Unauthorized' }));
+  const url = (req.url || '/').split('?')[0];
+  const method = req.method;
+  
+  console.log(`${method} ${url}`);
+
+  // API 路由
+  if (url.startsWith('/api/')) {
+    const data = readData();
+
+    try {
+      // ========== 笔记 API ==========
+      if (url === '/api/notes' && method === 'GET') {
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify(data.notes || []));
+        return;
+      }
+
+      if (url === '/api/notes' && method === 'POST') {
+        const body = await parseBody(req);
+        const note = {
+          id: body.id || crypto.randomUUID(),
+          ...body,
+          updatedAt: Date.now()
+        };
+        const notes = data.notes || [];
+        const idx = notes.findIndex(n => n.id === note.id);
+        if (idx >= 0) {
+          notes[idx] = { ...notes[idx], ...note };
+        } else {
+          note.createdAt = note.createdAt || Date.now();
+          notes.unshift(note);
+        }
+        data.notes = notes;
+        writeData(data);
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify(note));
+        return;
+      }
+
+      if (url.startsWith('/api/notes/') && method === 'DELETE') {
+        const id = url.split('/').pop();
+        data.notes = (data.notes || []).filter(n => n.id !== id);
+        writeData(data);
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: true }));
+        return;
+      }
+
+      // ========== 任务 API ==========
+      if (url === '/api/tasks' && method === 'GET') {
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify(data.tasks || []));
+        return;
+      }
+
+      if (url === '/api/tasks' && method === 'POST') {
+        const body = await parseBody(req);
+        const task = {
+          id: body.id || crypto.randomUUID(),
+          ...body,
+          updatedAt: Date.now()
+        };
+        const tasks = data.tasks || [];
+        const idx = tasks.findIndex(t => t.id === task.id);
+        if (idx >= 0) {
+          tasks[idx] = { ...tasks[idx], ...task };
+        } else {
+          task.createdAt = task.createdAt || Date.now();
+          tasks.unshift(task);
+        }
+        data.tasks = tasks;
+        writeData(data);
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify(task));
+        return;
+      }
+
+      // ========== 保险库 API ==========
+      if (url === '/api/vault' && method === 'GET') {
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify(data.vault || []));
+        return;
+      }
+
+      if (url === '/api/vault' && method === 'POST') {
+        const body = await parseBody(req);
+        const item = {
+          id: body.id || crypto.randomUUID(),
+          ...body,
+          updatedAt: Date.now()
+        };
+        const vault = data.vault || [];
+        const idx = vault.findIndex(v => v.id === item.id);
+        if (idx >= 0) {
+          vault[idx] = { ...vault[idx], ...item };
+        } else {
+          item.createdAt = item.createdAt || Date.now();
+          vault.unshift(item);
+        }
+        data.vault = vault;
+        writeData(data);
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify(item));
+        return;
+      }
+
+      // ========== 同步 API ==========
+      // POST: 接收客户端数据 (支持加密)
+      if (url === '/api/sync' && method === 'POST') {
+        const body = await parseBody(req);
+        console.log('同步请求:', body);
+        
+        // 支持加密数据 (零知识同步)
+        if (body.encrypted && body.data) {
+          // 服务器只存储密文，不解密
+          data.encryptedData = body.data;
+          data.isEncrypted = true;
+        } else {
+          // 兼容旧版明文同步
+          if (body.notes) data.notes = body.notes;
+          if (body.tasks) data.tasks = body.tasks;
+          if (body.vault) data.vault = body.vault;
+          data.isEncrypted = false;
+        }
+        writeData(data);
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ 
+          success: true, 
+          timestamp: Date.now()
+        }));
+        return;
+      }
+      
+      // GET: 获取同步数据
+      if (url === '/api/sync' && method === 'GET') {
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        // 返回加密状态和加密数据 (如果有)
+        if (data.isEncrypted && data.encryptedData) {
+          res.end(JSON.stringify({ 
+            encrypted: true, 
+            data: data.encryptedData 
+          }));
+        } else {
+          // 兼容旧版明文数据
+          res.end(JSON.stringify({ 
+            encrypted: false, 
+            data: { notes: data.notes, tasks: data.tasks, vault: data.vault }
+          }));
+        }
+        return;
+      }
+
+      // ========== 导出/导入 ==========
+      if (url === '/api/export' && method === 'GET') {
+        res.writeHead(200, { 
+          'Content-Type': 'application/json',
+          'Content-Disposition': 'attachment; filename=spc-export.json'
+        });
+        res.end(JSON.stringify(data, null, 2));
+        return;
+      }
+
+      // 未知路由
+      res.writeHead(404, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Not found' }));
+
+    } catch (e) {
+      console.error('API Error:', e);
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Internal server error', message: e.message }));
+    }
     return;
   }
 
-  const url = req.url.split('?')[0];
-  const method = req.method;
-  const data = readData();
-
-  try {
-    // ========== 笔记 API ==========
-    if (url === '/api/notes' && method === 'GET') {
-      res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify(data.notes || []));
-      return;
-    }
-
-    if (url === '/api/notes' && method === 'POST') {
-      const body = await parseBody(req);
-      const note = {
-        id: body.id || crypto.randomUUID(),
-        ...body,
-        updatedAt: Date.now()
-      };
-      const notes = data.notes || [];
-      const idx = notes.findIndex(n => n.id === note.id);
-      if (idx >= 0) {
-        notes[idx] = { ...notes[idx], ...note };
-      } else {
-        note.createdAt = note.createdAt || Date.now();
-        notes.unshift(note);
-      }
-      data.notes = notes;
-      writeData(data);
-      res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify(note));
-      return;
-    }
-
-    if (url.startsWith('/api/notes/') && method === 'DELETE') {
-      const id = url.split('/').pop();
-      data.notes = (data.notes || []).filter(n => n.id !== id);
-      writeData(data);
-      res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ success: true }));
-      return;
-    }
-
-    // ========== 任务 API ==========
-    if (url === '/api/tasks' && method === 'GET') {
-      res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify(data.tasks || []));
-      return;
-    }
-
-    if (url === '/api/tasks' && method === 'POST') {
-      const body = await parseBody(req);
-      const task = {
-        id: body.id || crypto.randomUUID(),
-        ...body,
-        updatedAt: Date.now()
-      };
-      const tasks = data.tasks || [];
-      const idx = tasks.findIndex(t => t.id === task.id);
-      if (idx >= 0) {
-        tasks[idx] = { ...tasks[idx], ...task };
-      } else {
-        task.createdAt = task.createdAt || Date.now();
-        tasks.unshift(task);
-      }
-      data.tasks = tasks;
-      writeData(data);
-      res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify(task));
-      return;
-    }
-
-    // ========== 保险库 API ==========
-    if (url === '/api/vault' && method === 'GET') {
-      res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify(data.vault || []));
-      return;
-    }
-
-    if (url === '/api/vault' && method === 'POST') {
-      const body = await parseBody(req);
-      const item = {
-        id: body.id || crypto.randomUUID(),
-        ...body,
-        updatedAt: Date.now()
-      };
-      const vault = data.vault || [];
-      const idx = vault.findIndex(v => v.id === item.id);
-      if (idx >= 0) {
-        vault[idx] = { ...vault[idx], ...item };
-      } else {
-        item.createdAt = item.createdAt || Date.now();
-        vault.unshift(item);
-      }
-      data.vault = vault;
-      writeData(data);
-      res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify(item));
-      return;
-    }
-
-    // ========== 同步 API ==========
-    if (url === '/api/sync' && method === 'POST') {
-      const body = await parseBody(req);
-      // 合并客户端数据到服务端
-      if (body.notes) data.notes = body.notes;
-      if (body.tasks) data.tasks = body.tasks;
-      if (body.vault) data.vault = body.vault;
-      writeData(data);
-      res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ 
-        success: true, 
-        timestamp: Date.now(),
-        data: { notes: data.notes, tasks: data.tasks, vault: data.vault }
-      }));
-      return;
-    }
-
-    // ========== 导出/导入 ==========
-    if (url === '/api/export' && method === 'GET') {
-      res.writeHead(200, { 
-        'Content-Type': 'application/json',
-        'Content-Disposition': 'attachment; filename=spc-export.json'
-      });
-      res.end(JSON.stringify(data, null, 2));
-      return;
-    }
-
-    // 未知路由
-    res.writeHead(404, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ error: 'Not found' }));
-
-  } catch (e) {
-    console.error('API Error:', e);
-    res.writeHead(500, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ error: 'Internal server error' }));
-  }
-}
-
-// 静态文件服务
-function serveStatic(req, res) {
-  let filePath = req.url.split('?')[0];
+  // 静态文件服务
+  let filePath = url;
   
   // 默认 index.html
   if (filePath === '/') {
@@ -254,78 +315,44 @@ function serveStatic(req, res) {
   };
 
   const contentType = contentTypes[ext] || 'text/plain';
-  const staticPath = path.join(__dirname, 'public', filePath);
-
-  // 安全检查: 防止目录遍历
-  if (!staticPath.startsWith(path.join(__dirname, 'public'))) {
-    res.writeHead(403);
-    res.end('Forbidden');
-    return;
-  }
-
-  fs.readFile(staticPath, (err, content) => {
-    if (err) {
-      if (err.code === 'ENOENT') {
-        // 如果public目录下没有，尝试根目录
-        fs.readFile(path.join(__dirname, filePath), (err2, content2) => {
-          if (err2) {
-            res.writeHead(404);
-            res.end('Not found');
-          } else {
-            res.writeHead(200, { 'Content-Type': contentType });
-            res.end(content2);
-          }
-        });
-      } else {
-        res.writeHead(500);
-        res.end('Server error');
-      }
-    } else {
-      res.writeHead(200, { 'Content-Type': contentType });
-      res.end(content);
-    }
-  });
-}
-
-// 创建 HTTP 服务器
-const server = http.createServer((req, res) => {
-  const url = req.url || '';
   
-  // API 路由
-  if (url.startsWith('/api/')) {
-    handleApi(req, res);
+  const fileContent = getStaticFile(filePath);
+
+  if (fileContent) {
+    res.writeHead(200, { 'Content-Type': contentType });
+    res.end(fileContent);
   } else {
-    serveStatic(req, res);
+    res.writeHead(404);
+    res.end('Not found');
   }
 });
 
-// 获取本地IP地址
-function getLocalIP() {
+// 获取局域网IP
+function getLocalIpAddress() {
   const os = require('os');
   const interfaces = os.networkInterfaces();
-  for (const name of Object.keys(interfaces)) {
+  for (const name in interfaces) {
     for (const iface of interfaces[name]) {
       if (iface.family === 'IPv4' && !iface.internal) {
         return iface.address;
       }
     }
   }
-  return '127.0.0.1';
+  return 'localhost';
 }
-
-const LOCAL_IP = getLocalIP();
 
 // 启动服务器
 server.listen(PORT, () => {
+  const localIp = getLocalIpAddress();
   console.log(`
 ╔═══════════════════════════════════════════════════════╗
 ║          SPC API Server 已启动                        ║
 ║  ─────────────────────────────────────────────────── ║
-║  📱 手机访问: http://${LOCAL_IP}:${PORT}               ║
-║  💻 本地访问: http://localhost:${PORT}                   ║
-║  🔌 API 端点: http://localhost:${PORT}/api              ║
+║  💻 本地访问:   http://localhost:${PORT}                    ║
+║  📱 局域网访问: http://${localIp}:${PORT}                 ║
+║  API 端点:   http://localhost:${PORT}/api              ║
 ║  ─────────────────────────────────────────────────── ║
-║  📁 数据文件: ${DATA_FILE}
+║  数据文件:   ${DATA_FILE}
 ╚═══════════════════════════════════════════════════════╝
   `);
 });
