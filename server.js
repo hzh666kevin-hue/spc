@@ -299,16 +299,33 @@ const server = http.createServer((req, res) => {
   }
 });
 
+// 获取本地IP地址
+function getLocalIP() {
+  const os = require('os');
+  const interfaces = os.networkInterfaces();
+  for (const name of Object.keys(interfaces)) {
+    for (const iface of interfaces[name]) {
+      if (iface.family === 'IPv4' && !iface.internal) {
+        return iface.address;
+      }
+    }
+  }
+  return '127.0.0.1';
+}
+
+const LOCAL_IP = getLocalIP();
+
 // 启动服务器
 server.listen(PORT, () => {
   console.log(`
 ╔═══════════════════════════════════════════════════════╗
 ║          SPC API Server 已启动                        ║
 ║  ─────────────────────────────────────────────────── ║
-║  本地访问:   http://localhost:${PORT}                    ║
-║  API 端点:   http://localhost:${PORT}/api              ║
+║  📱 手机访问: http://${LOCAL_IP}:${PORT}               ║
+║  💻 本地访问: http://localhost:${PORT}                   ║
+║  🔌 API 端点: http://localhost:${PORT}/api              ║
 ║  ─────────────────────────────────────────────────── ║
-║  数据文件:   ${DATA_FILE}
+║  📁 数据文件: ${DATA_FILE}
 ╚═══════════════════════════════════════════════════════╝
   `);
 });

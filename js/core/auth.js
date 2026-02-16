@@ -1,6 +1,7 @@
 /**
  * SPC 认证与用户管理系统
  * 支持本地模式和云端同步模式
+ * 支持零知识加密云同步
  */
 
 const AuthService = {
@@ -9,6 +10,9 @@ const AuthService = {
   
   // 存储键前缀
   STORAGE_PREFIX: 'spc_user_',
+  
+  // 同步加密密钥 (临时存储在内存中)
+  _syncKey: null,
   
   // 初始化
   init() {
@@ -46,12 +50,18 @@ const AuthService = {
       createdAt: Date.now(),
       mode: options.mode || 'local', // 'local' 或 'cloud'
       cloudUrl: options.cloudUrl || '',
+      hasSyncPassword: !!options.syncPassword, // 是否设置了同步密码
       lastLogin: null
     };
     
     // 如果是云端模式，保存加密的密码用于验证
     if (options.mode === 'cloud' && password) {
       user.passwordHash = this.hashPassword(password, userId);
+    }
+    
+    // 如果提供了同步密码，设置加密密钥
+    if (options.mode === 'cloud' && options.syncPassword) {
+      this.setSyncKey(options.syncPassword);
     }
     
     users.push(user);
@@ -64,7 +74,7 @@ const AuthService = {
   },
   
   // 用户登录
-  login(username, password, cloudUrl = null) {
+  login(username, password, cloudUrl = null, syncPassword = null) {
     const users = this.getAllUsers();
     const user = users.find(u => u.username === username);
     
@@ -89,6 +99,11 @@ const AuthService = {
     
     // 设置当前用户
     this.setCurrentUser(user);
+    
+    // 如果是云端模式且提供了同步密码，设置加密密钥
+    if (user.mode === 'cloud' && syncPassword) {
+      this.setSyncKey(syncPassword);
+    }
     
     return { success: true, user: user };
   },
@@ -226,6 +241,81 @@ const AuthService = {
     return this.currentUser !== null;
   },
   
+  // 设置同步加密密钥 (从用户的同步密码派生)
+  async setSyncKey(password) {
+    if (!password) {
+      this._syncKey = null;
+      return;
+    }
+    // 使用 PBKDF2 派生加密密钥
+    const salt = this.currentUser?.id ? 
+      await this._hashString(this.currentUser.id) : 'SPC_SALT_2026';
+    this._syncKey = await this._deriveKey(password, salt);
+  },
+  
+  // 简单的字符串哈希 (用于 salt)
+  async _hashString(str) {
+    const msgBuffer = new TextEncoder().encode(str);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+    return btoa(String.fromCharCode(...new Uint8Array(hashBuffer)));
+  },
+  
+  // 从密码派生加密密钥
+  async _deriveKey(password, salt) {
+    const encoder = new TextEncoder();
+    const keyMaterial = await crypto.subtle.importKey(
+      'raw',
+      encoder.encode(password),
+      'PBKDF2',
+      false,
+      ['deriveKey']
+    );
+    return crypto.subtle.deriveKey(
+      {
+        name: 'PBKDF2',
+        salt: encoder.encode(salt),
+        iterations: 100000,
+        hash: 'SHA-256'
+      },
+      keyMaterial,
+      { name: 'AES-GCM', length: 256 },
+      false,
+      ['encrypt', 'decrypt']
+    );
+  },
+  
+  // 加密数据 (用于云同步)
+  async _encryptData(data) {
+    if (!this._syncKey) throw new Error('未设置同步密钥');
+    const encoder = new TextEncoder();
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+    const encrypted = await crypto.subtle.encrypt(
+      { name: 'AES-GCM', iv: iv },
+      this._syncKey,
+      encoder.encode(JSON.stringify(data))
+    );
+    // 返回: base64(iv + encrypted)
+    const combined = new Uint8Array(iv.length + encrypted.byteLength);
+    combined.set(iv);
+    combined.set(new Uint8Array(encrypted), iv.length);
+    return btoa(String.fromCharCode(...combined));
+  },
+  
+  // 解密数据 (用于云同步)
+  async _decryptData(encryptedBundle) {
+    if (!this._syncKey) throw new Error('未设置同步密钥');
+    const decoder = new TextDecoder();
+    const combined = Uint8Array.from(atob(encryptedBundle), c => c.charCodeAt(0));
+    const iv = combined.slice(0, 12);
+    const encrypted = combined.slice(12);
+    const decrypted = await crypto.subtle.decrypt(
+      { name: 'AES-GCM', iv: iv },
+      this._syncKey,
+      encrypted
+    );
+    return JSON.parse(decoder.decode(decrypted));
+  },
+  
   // 云端同步相关
   async syncToCloud() {
     if (!this.currentUser || this.currentUser.mode !== 'cloud') {
@@ -238,6 +328,11 @@ const AuthService = {
         return { success: false, error: '未配置云端服务器' };
       }
       
+      // 检查是否设置了同步密钥
+      if (!this._syncKey) {
+        return { success: false, error: '请先设置同步密码' };
+      }
+      
       // 获取所有数据
       const data = {
         notes: this.getData('notes') || [],
@@ -245,11 +340,14 @@ const AuthService = {
         vault: this.getData('vault') || []
       };
       
+      // 🔐 加密后再发送到云端 (零知识加密)
+      const encryptedData = await this._encryptData(data);
+      
       // 发送到云端
       const response = await fetch(cloudUrl + '/api/sync', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
+        body: JSON.stringify({ encrypted: true, data: encryptedData })
       });
       
       if (response.ok) {
@@ -273,19 +371,32 @@ const AuthService = {
         return { success: false, error: '未配置云端服务器' };
       }
       
-      // 从云端获取数据
-      const [notesRes, tasksRes, vaultRes] = await Promise.all([
-        fetch(cloudUrl + '/api/notes'),
-        fetch(cloudUrl + '/api/tasks'),
-        fetch(cloudUrl + '/api/vault')
-      ]);
+      // 检查是否设置了同步密钥
+      if (!this._syncKey) {
+        return { success: false, error: '请先设置同步密码' };
+      }
       
-      const notes = await notesRes.json();
-      const tasks = await tasksRes.json();
-      const vault = await vaultRes.json();
+      // 从云端获取加密数据
+      const response = await fetch(cloudUrl + '/api/sync');
+      const result = await response.json();
+      
+      if (!result.encrypted || !result.data) {
+        return { success: false, error: '服务器数据格式不正确' };
+      }
+      
+      // 🔐 解密数据
+      const data = await this._decryptData(result.data);
       
       // 保存到本地
-      this.setData('notes', notes);
+      this.setData('notes', data.notes || []);
+      this.setData('tasks', data.tasks || []);
+      this.setData('vault', data.vault || []);
+      
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  },
       this.setData('tasks', tasks);
       this.setData('vault', vault);
       
