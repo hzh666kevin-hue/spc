@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>保险箱 — SPC</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../css/design-system.css">
+<link rel="stylesheet" href="custom-theme.css">
+<style>
+  .tbl th{position:sticky;top:0;z-index:2;background:var(--bg-secondary);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--text-tertiary);padding:10px 14px;text-align:left;border-bottom:2px solid var(--border-default);white-space:nowrap;}
+  .tbl td{padding:10px 14px;border-bottom:1px solid var(--border-subtle);font-size:13px;color:var(--text-primary);vertical-align:middle;}
+  .tbl tr:hover td{background:var(--bg-tertiary);}
+  .tbl tr.selected td{background:rgba(79,70,229,0.06);}
+  .folder-item{padding:6px 10px;border-radius:8px;cursor:pointer;font-size:12px;display:flex;align-items:center;gap:8px;transition:all 150ms;color:var(--text-secondary);}
+  .folder-item:hover{background:var(--bg-tertiary);}
+  .folder-item.active{background:rgba(79,70,229,0.08);color:var(--brand-600);font-weight:500;}
+  .tag{display:inline-flex;align-items:center;padding:2px 8px;border-radius:99px;font-size:10px;font-weight:500;gap:3px;}
+  .type-badge{padding:2px 8px;border-radius:6px;font-size:10px;font-weight:500;}
+  .pwd-dots{font-family:var(--font-mono);letter-spacing:2px;color:var(--text-tertiary);}
+  .gen-bar{height:6px;border-radius:99px;transition:width .4s cubic-bezier(.16,1,.3,1);}
+  .tab-btn{padding:6px 14px;border-radius:8px;font-size:12px;font-weight:500;cursor:pointer;transition:all 150ms;color:var(--text-secondary);background:transparent;border:none;}
+  .tab-btn.active{background:var(--brand-50);color:var(--brand-600);}
+  .tab-btn:hover:not(.active){background:var(--bg-tertiary);}
+</style>
+</head>
+<body class="flex h-screen">
+
+<!-- ===== 侧栏: 文件夹导航 (IdentityVault 风格) ===== -->
+<aside class="w-[200px] min-w-[200px] h-full flex flex-col border-r" style="background:var(--bg-secondary);border-color:var(--border-default)">
+  <div class="p-3">
+    <div class="flex items-center gap-2 mb-3">
+      <div class="w-7 h-7 rounded-lg bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center">
+        <svg class="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z"/></svg>
+      </div>
+      <span class="text-sm font-bold" style="color:var(--text-primary)">保险箱</span>
+    </div>
+    <div class="relative mb-3">
+      <svg class="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2" style="color:var(--text-tertiary)" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"/></svg>
+      <input type="text" id="search" oninput="render()" placeholder="搜索..." class="input text-xs pl-8 py-1.5">
+    </div>
+  </div>
+
+  <!-- 导航菜单 -->
+  <nav class="flex-1 overflow-y-auto px-2 space-y-0.5">
+    <div class="px-2 py-1 text-[9px] font-semibold uppercase tracking-wider" style="color:var(--text-tertiary)">导航</div>
+    <div class="folder-item active" data-tab="vault" onclick="switchTab('vault')">
+      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z"/></svg>
+      我的保险库
+    </div>
+    <div class="folder-item" data-tab="generator" onclick="switchTab('generator')">
+      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 5.25a3 3 0 013 3m3 0a6 6 0 01-7.029 5.912c-.563-.097-1.159.026-1.563.43L10.5 17.25H8.25v2.25H6v2.25H2.25v-2.818c0-.597.237-1.17.659-1.591l6.499-6.499c.404-.404.527-1 .43-1.563A6 6 0 1121.75 8.25z"/></svg>
+      密码生成器
+    </div>
+    <div class="folder-item" data-tab="audit" onclick="switchTab('audit')">
+      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z"/></svg>
+      安全审计
+    </div>
+    <div class="folder-item" data-tab="settings" onclick="switchTab('settings')">
+      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 011.37.49l1.296 2.247a1.125 1.125 0 01-.26 1.431l-1.003.827c-.293.24-.438.613-.431.992a6.759 6.759 0 010 .255c-.007.378.138.75.43.99l1.005.828c.424.35.534.954.26 1.43l-1.298 2.247a1.125 1.125 0 01-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.57 6.57 0 01-.22.128c-.331.183-.581.495-.644.869l-.213 1.28c-.09.543-.56.941-1.11.941h-2.594c-.55 0-1.02-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 01-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 01-1.369-.49l-1.297-2.247a1.125 1.125 0 01.26-1.431l1.004-.827c.292-.24.437-.613.43-.992a6.932 6.932 0 010-.255c.007-.378-.138-.75-.43-.99l-1.004-.828a1.125 1.125 0 01-.26-1.43l1.297-2.247a1.125 1.125 0 011.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.087.22-.128.332-.183.582-.495.644-.869l.214-1.281z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+      安全设置
+    </div>
+
+    <div class="h-px my-2" style="background:var(--border-default)"></div>
+    <div class="px-2 py-1 text-[9px] font-semibold uppercase tracking-wider" style="color:var(--text-tertiary)">文件夹</div>
+    <div id="folder-list"></div>
+  </nav>
+
+  <!-- 底部状态 -->
+  <div class="p-3 border-t text-[10px] space-y-1" style="border-color:var(--border-default);color:var(--text-tertiary)">
+    <div class="flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>AES-256-GCM 加密</div>
+    <div><span id="entry-count">0</span> 条记录 · PBKDF2 ×310K</div>
+  </div>
+</aside>
+
+<!-- ===== 主内容 ===== -->
+<main class="flex-1 flex flex-col overflow-hidden" style="background:var(--bg-primary)">
+
+  <!-- 顶部操作栏 -->
+  <header class="min-h-[52px] flex items-center gap-3 px-5 border-b" style="border-color:var(--border-default)">
+    <h2 class="text-sm font-semibold flex items-center gap-2" style="color:var(--text-primary)">
+      <svg class="w-4 h-4 text-cyan-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z"/></svg>
+      <span id="panel-title">我的保险库</span>
+    </h2>
+    <div class="flex-1"></div>
+    <button onclick="openAdd()" class="btn btn-primary btn-sm">
+      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
+      添加新项目
+    </button>
+    <button onclick="exportCSV()" class="btn btn-secondary btn-sm">导出</button>
+    <button onclick="lockVault()" class="btn btn-ghost btn-sm" style="color:var(--text-tertiary)" title="锁定">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z"/></svg>
+    </button>
+  </header>
+
+  <!-- Tab 面板容器 -->
+  <div class="flex-1 overflow-auto" id="content">
+
+    <!-- ===== TAB: 保险库 (表格视图) ===== -->
+    <div id="tab-vault" class="h-full flex flex-col">
+      <!-- 筛选栏 -->
+      <div class="flex items-center gap-2 px-5 py-2 border-b" style="border-color:var(--border-subtle)">
+        <select id="filter-group" onchange="render()" class="input text-xs py-1 w-32" style="width:auto">
+          <option value="">全部分组</option>
+        </select>
+        <div class="flex-1"></div>
+        <span class="text-[11px]" style="color:var(--text-tertiary)" id="filter-info">共 0 条</span>
+      </div>
+      <!-- 表格 -->
+      <div class="flex-1 overflow-auto">
+        <table class="tbl w-full">
+          <thead><tr>
+            <th style="width:28px"><input type="checkbox" class="accent-brand-500"></th>
+            <th>项目名称</th>
+            <th>分类/状态</th>
+            <th>附加信息</th>
+            <th>标签</th>
+            <th>最后更新</th>
+            <th style="width:100px">操作</th>
+          </tr></thead>
+          <tbody id="vault-tbody"></tbody>
+        </table>
+      </div>
+      <!-- 分页 -->
+      <div class="flex items-center justify-between px-5 py-2 border-t" style="border-color:var(--border-default)">
+        <span class="text-[11px]" style="color:var(--text-tertiary)" id="page-info">第 1-0 条/总共 0 条</span>
+        <div class="flex gap-1" id="pagination"></div>
+      </div>
+    </div>
+
+    <!-- ===== TAB: 密码生成器 ===== -->
+    <div id="tab-generator" class="hidden p-8 max-w-xl mx-auto animate-fade-in">
+      <h2 class="text-lg font-bold mb-1" style="color:var(--text-primary)">密码生成器</h2>
+      <p class="text-xs mb-6" style="color:var(--text-secondary)">生成密码学安全的随机密码</p>
+      <div class="card p-5 mb-4">
+        <div class="font-mono text-xl text-center py-4 px-3 rounded-xl mb-4 cursor-pointer select-all break-all" style="background:var(--bg-tertiary);color:var(--text-primary)" id="gen-result" onclick="copyGenResult()">点击"生成"开始</div>
+        <div class="flex items-center gap-3 mb-4">
+          <span class="text-xs" style="color:var(--text-secondary)">强度</span>
+          <div class="flex-1 h-1.5 rounded-full overflow-hidden" style="background:var(--border-default)"><div id="gen-str-bar" class="gen-bar bg-gray-300" style="width:0%"></div></div>
+          <span class="text-xs font-medium" id="gen-str-label" style="color:var(--text-tertiary)">--</span>
+        </div>
+        <div class="flex items-center gap-3 mb-4">
+          <label class="text-xs" style="color:var(--text-secondary)">长度</label>
+          <input type="range" id="gen-len" min="8" max="64" value="20" oninput="document.getElementById('gen-len-val').textContent=this.value" class="flex-1 accent-brand-500">
+          <span class="text-sm font-mono font-bold w-6 text-right" id="gen-len-val" style="color:var(--text-primary)">20</span>
+        </div>
+        <div class="flex gap-3 flex-wrap mb-5">
+          <label class="flex items-center gap-1.5 text-xs cursor-pointer" style="color:var(--text-secondary)"><input type="checkbox" id="gen-lower" checked class="accent-brand-500"> a-z</label>
+          <label class="flex items-center gap-1.5 text-xs cursor-pointer" style="color:var(--text-secondary)"><input type="checkbox" id="gen-upper" checked class="accent-brand-500"> A-Z</label>
+          <label class="flex items-center gap-1.5 text-xs cursor-pointer" style="color:var(--text-secondary)"><input type="checkbox" id="gen-digits" checked class="accent-brand-500"> 0-9</label>
+          <label class="flex items-center gap-1.5 text-xs cursor-pointer" style="color:var(--text-secondary)"><input type="checkbox" id="gen-symbols" class="accent-brand-500"> !@#$</label>
+        </div>
+        <div class="flex gap-2">
+          <button onclick="doGenerate()" class="btn btn-primary flex-1">生成密码</button>
+          <button onclick="copyGenResult()" class="btn btn-secondary flex-1">复制</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== TAB: 安全审计 ===== -->
+    <div id="tab-audit" class="hidden p-8 max-w-3xl mx-auto animate-fade-in">
+      <h2 class="text-lg font-bold mb-1" style="color:var(--text-primary)">安全审计</h2>
+      <p class="text-xs mb-6" style="color:var(--text-secondary)">检测弱密码、重复密码和过期密码</p>
+      <!-- 审计评分卡 -->
+      <div class="grid grid-cols-4 gap-4 mb-6">
+        <div class="card p-4 text-center"><div class="text-3xl font-bold" id="audit-score" style="color:var(--brand-600)">--</div><div class="text-[11px] mt-1" style="color:var(--text-secondary)">安全评分</div></div>
+        <div class="card p-4 text-center"><div class="text-2xl font-bold text-red-500" id="audit-weak">0</div><div class="text-[11px] mt-1" style="color:var(--text-secondary)">弱密码</div></div>
+        <div class="card p-4 text-center"><div class="text-2xl font-bold text-amber-500" id="audit-reused">0</div><div class="text-[11px] mt-1" style="color:var(--text-secondary)">重复密码</div></div>
+        <div class="card p-4 text-center"><div class="text-2xl font-bold text-orange-500" id="audit-old">0</div><div class="text-[11px] mt-1" style="color:var(--text-secondary)">过期(>90天)</div></div>
+      </div>
+      <!-- 审计结果列表 -->
+      <div id="audit-results" class="space-y-3"></div>
+      <button onclick="runAudit()" class="btn btn-primary mt-4">重新扫描</button>
+    </div>
+
+    <!-- ===== TAB: 安全设置 ===== -->
+    <div id="tab-settings" class="hidden p-8 max-w-2xl mx-auto animate-fade-in">
+      <h2 class="text-lg font-bold mb-1" style="color:var(--text-primary)">安全设置</h2>
+      <p class="text-xs mb-6" style="color:var(--text-secondary)">保护你的账户和数据安全</p>
+      <div class="space-y-4">
+        <div class="card p-5 flex items-center gap-4">
+          <div class="w-10 h-10 rounded-xl bg-brand-50 flex items-center justify-center shrink-0"><svg class="w-5 h-5 text-brand-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75"/></svg></div>
+          <div class="flex-1"><div class="text-sm font-semibold" style="color:var(--text-primary)">主密码</div><div class="text-xs" style="color:var(--text-secondary)">用于加密/解密保险库数据，定期更改可提高安全性</div></div>
+          <button class="btn btn-secondary btn-sm">修改</button>
+        </div>
+        <div class="card p-5 flex items-center gap-4">
+          <div class="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center shrink-0"><svg class="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z"/></svg></div>
+          <div class="flex-1"><div class="text-sm font-semibold" style="color:var(--text-primary)">加密导出</div><div class="text-xs" style="color:var(--text-secondary)">将所有数据导出为加密文件，可用于备份和迁移</div></div>
+          <button onclick="exportCSV()" class="btn btn-secondary btn-sm">立即导出</button>
+        </div>
+        <div class="card p-5 flex items-center gap-4">
+          <div class="w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center shrink-0"><svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5"/></svg></div>
+          <div class="flex-1"><div class="text-sm font-semibold" style="color:var(--text-primary)">数据导入</div><div class="text-xs" style="color:var(--text-secondary)">从 CSV 文件导入密码条目 (支持 Chrome、KeePass 格式)</div></div>
+          <button onclick="document.getElementById('csv-import').click()" class="btn btn-secondary btn-sm">立即导入</button>
+          <input type="file" id="csv-import" accept=".csv" class="hidden" onchange="importCSV(this)">
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- ===== 锁屏 ===== -->
+<div id="lockscreen" class="fixed inset-0 z-50 flex items-center justify-center" style="background:var(--bg-overlay);backdrop-filter:blur(24px)">
+  <div class="modal p-10 w-[400px] max-w-[90vw] text-center">
+    <div class="w-14 h-14 mx-auto rounded-2xl bg-gradient-to-br from-cyan-50 to-blue-50 flex items-center justify-center mb-5">
+      <svg class="w-7 h-7 text-cyan-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z"/></svg>
+    </div>
+    <h2 class="text-lg font-bold mb-1" style="color:var(--text-primary)">保险箱</h2>
+    <p class="text-sm mb-5" style="color:var(--text-secondary)" id="lock-hint">输入主密码解锁</p>
+    <input type="password" id="lock-pwd" class="input input-lg mb-2" placeholder="主密码..." onkeydown="if(event.key==='Enter')doUnlock()">
+    <input type="password" id="lock-confirm" class="input input-lg mb-3 hidden" placeholder="确认密码...">
+    <div id="lock-err" class="text-xs text-red-500 mb-3 hidden"></div>
+    <button onclick="doUnlock()" class="btn btn-primary w-full py-3 mb-3" id="lock-btn">解锁</button>
+    <button onclick="resetVault()" class="text-[11px] cursor-pointer hover:underline" style="color:var(--text-tertiary);background:none;border:none">忘记密码？重置保险箱</button>
+  </div>
+</div>
+
+<!-- ===== 编辑弹窗 ===== -->
+<div id="modal-overlay" class="overlay" style="background:var(--bg-overlay);backdrop-filter:blur(6px)" onclick="if(event.target===this)closeModal()">
+  <div class="modal w-[500px] max-w-[90vw] max-h-[85vh] overflow-auto">
+    <div class="flex items-center justify-between px-6 py-4 border-b" style="border-color:var(--border-subtle)">
+      <h3 class="text-sm font-semibold" id="modal-title" style="color:var(--text-primary)">新建条目</h3>
+      <button onclick="closeModal()" class="btn btn-ghost btn-icon btn-sm">&times;</button>
+    </div>
+    <div class="p-6 space-y-3">
+      <div><label class="text-[10px] font-medium block mb-1" style="color:var(--text-secondary)">名称</label><input id="f-name" class="input text-xs"></div>
+      <div class="grid grid-cols-2 gap-3">
+        <div><label class="text-[10px] font-medium block mb-1" style="color:var(--text-secondary)">用户名</label><input id="f-user" class="input text-xs"></div>
+        <div><label class="text-[10px] font-medium block mb-1" style="color:var(--text-secondary)">分组</label><input id="f-group" class="input text-xs" placeholder="如：工作、个人、服务器..."></div>
+      </div>
+      <div><label class="text-[10px] font-medium block mb-1" style="color:var(--text-secondary)">密码</label>
+        <div class="flex gap-2"><input id="f-pwd" type="password" class="input text-xs flex-1 font-mono"><button onclick="fillGenPwd()" class="btn btn-secondary btn-sm" title="生成随机密码">🎲 生成</button></div>
+        <div class="flex items-center gap-2 mt-1.5"><div class="flex-1 h-1 rounded-full overflow-hidden" style="background:var(--border-default)"><div id="f-pwd-bar" class="gen-bar bg-gray-300" style="width:0%"></div></div><span class="text-[10px]" id="f-pwd-label" style="color:var(--text-tertiary)">--</span></div>
+      </div>
+      <div><label class="text-[10px] font-medium block mb-1" style="color:var(--text-secondary)">网址</label><input id="f-url" class="input text-xs" placeholder="https://"></div>
+      <div><label class="text-[10px] font-medium block mb-1" style="color:var(--text-secondary)">备注</label><textarea id="f-notes" rows="2" class="input text-xs resize-none"></textarea></div>
+    </div>
+    <div class="flex gap-2 justify-end px-6 pb-5"><button onclick="closeModal()" class="btn btn-secondary btn-sm">取消</button><button onclick="saveEntry()" class="btn btn-primary btn-sm">保存</button></div>
+  </div>
+</div>
+
+<script>
+const VAULT_KEY='trisync_vault',HASH_KEY='trisync_vault_hash';
+let entries=[],activeId=null,masterKey='',editId=null,activeGroup='',isNew=false,currentTab='vault',auditLog=[];
+
+// Crypto
+async function deriveKey(pwd){const e=new TextEncoder,k=await crypto.subtle.importKey('raw',e.encode(pwd),'PBKDF2',false,['deriveKey']);return crypto.subtle.deriveKey({name:'PBKDF2',salt:e.encode('spc-vault-salt-v2'),iterations:310000,hash:'SHA-256'},k,{name:'AES-GCM',length:256},false,['encrypt','decrypt'])}
+async function enc(data,pwd){const k=await deriveKey(pwd),iv=crypto.getRandomValues(new Uint8Array(12)),ct=await crypto.subtle.encrypt({name:'AES-GCM',iv},k,new TextEncoder().encode(data));const r=new Uint8Array(12+ct.byteLength);r.set(iv);r.set(new Uint8Array(ct),12);return btoa(String.fromCharCode(...r))}
+async function dec(data,pwd){const k=await deriveKey(pwd),raw=atob(data),bytes=new Uint8Array(raw.length);for(let i=0;i<raw.length;i++)bytes[i]=raw.charCodeAt(i);const iv=bytes.slice(0,12),ct=bytes.slice(12);return new TextDecoder().decode(await crypto.subtle.decrypt({name:'AES-GCM',iv},k,ct))}
+
+function evalStrength(p){if(!p)return{l:'无',c:'bg-gray-300',w:0};let s=0;if(p.length>=8)s++;if(p.length>=14)s++;if(/[a-z]/.test(p)&&/[A-Z]/.test(p))s++;if(/\d/.test(p))s++;if(/[^a-zA-Z0-9]/.test(p))s++;if(/^[0-9]+$/.test(p)||/^[a-zA-Z]+$/.test(p))s=Math.max(s-1,0);if(p.length<6)s=Math.min(s,1);s=Math.min(s,4);return[{l:'极弱',c:'bg-red-500',w:10},{l:'弱',c:'bg-orange-500',w:25},{l:'一般',c:'bg-yellow-500',w:50},{l:'强',c:'bg-emerald-500',w:75},{l:'极强',c:'bg-cyan-400',w:100}][s]}
+
+// Init
+function init(){isNew=!localStorage.getItem(VAULT_KEY);if(isNew){document.getElementById('lock-hint').textContent='首次使用，请设置主密码';document.getElementById('lock-confirm').classList.remove('hidden');document.getElementById('lock-btn').textContent='创建保险箱'}document.getElementById('lock-pwd').focus();
+  document.getElementById('f-pwd').addEventListener('input',e=>{const s=evalStrength(e.target.value);document.getElementById('f-pwd-bar').style.width=s.w+'%';document.getElementById('f-pwd-bar').className='gen-bar '+s.c;document.getElementById('f-pwd-label').textContent=s.l})}
+
+async function doUnlock(){const pwd=document.getElementById('lock-pwd').value,err=document.getElementById('lock-err');err.classList.add('hidden');if(!pwd||pwd.length<4){err.textContent='密码至少4位';err.classList.remove('hidden');return}if(isNew){const c=document.getElementById('lock-confirm').value;if(pwd!==c){err.textContent='两次密码不一致';err.classList.remove('hidden');return}const encrypted=await enc('[]',pwd);localStorage.setItem(VAULT_KEY,encrypted);localStorage.setItem(HASH_KEY,btoa(pwd.slice(0,3)));masterKey=pwd;entries=[];document.getElementById('lockscreen').style.display='none';render();return}try{const raw=localStorage.getItem(VAULT_KEY);entries=JSON.parse(await dec(raw,pwd));masterKey=pwd;document.getElementById('lockscreen').style.display='none';logAudit('解锁','保险箱已解锁');render()}catch{err.textContent='密码错误';err.classList.remove('hidden')}}
+
+function lockVault(){masterKey='';entries=[];document.getElementById('lockscreen').style.display='';document.getElementById('lock-pwd').value='';document.getElementById('lock-err').classList.add('hidden');isNew=false;document.getElementById('lock-confirm').classList.add('hidden');document.getElementById('lock-hint').textContent='输入主密码解锁';document.getElementById('lock-btn').textContent='解锁'}
+
+function resetVault(){if(!confirm('⚠️ 重置将清除所有保险箱数据！此操作不可撤销。\n\n确定要重置吗？')){return}if(!confirm('再次确认：所有密码条目将被永久删除。')){return}localStorage.removeItem(VAULT_KEY);localStorage.removeItem(HASH_KEY);localStorage.removeItem('spc_vault_verifier');entries=[];masterKey='';activeId=null;isNew=true;document.getElementById('lock-hint').textContent='保险箱已重置，请设置新的主密码';document.getElementById('lock-confirm').classList.remove('hidden');document.getElementById('lock-btn').textContent='创建保险箱';document.getElementById('lock-pwd').value='';document.getElementById('lock-err').classList.add('hidden');document.getElementById('lock-pwd').focus()}
+
+async function persist(){if(!masterKey)return;localStorage.setItem(VAULT_KEY,await enc(JSON.stringify(entries),masterKey))}
+
+// Tab switching
+function switchTab(tab){currentTab=tab;document.querySelectorAll('[id^="tab-"]').forEach(el=>el.classList.add('hidden'));document.getElementById('tab-'+tab).classList.remove('hidden');document.querySelectorAll('.folder-item').forEach(el=>{el.classList.toggle('active',el.dataset.tab===tab)});
+  const titles={vault:'我的保险库',generator:'密码生成器',audit:'安全审计',settings:'安全设置'};document.getElementById('panel-title').textContent=titles[tab]||'';
+  if(tab==='audit')runAudit()}
+
+// Color hash for groups
+function groupColor(name){if(!name)return'#94A3B8';const colors=['#6366F1','#06B6D4','#8B5CF6','#F59E0B','#22C55E','#EF4444','#EC4899','#3B82F6','#14B8A6','#F97316'];let h=0;for(let i=0;i<name.length;i++)h=name.charCodeAt(i)+((h<<5)-h);return colors[Math.abs(h)%colors.length]}
+
+// Render vault table
+function render(){
+  const q=document.getElementById('search').value.toLowerCase();const fg=document.getElementById('filter-group').value;
+  const groups=[...new Set(entries.map(e=>e.group).filter(Boolean))].sort();
+  // Folder list
+  let fh='<div class="folder-item '+(activeGroup===''?'active':'')+'" onclick="activeGroup=\'\';render()"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6z"/></svg>全部项目 <span class="ml-auto text-[10px]" style="color:var(--text-tertiary)">'+entries.length+'</span></div>';
+  groups.forEach(g=>{const c=entries.filter(e=>e.group===g).length;fh+='<div class="folder-item '+(activeGroup===g?'active':'')+'" onclick="activeGroup=\''+g+'\';render()"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12.75V12A2.25 2.25 0 014.5 9.75h15A2.25 2.25 0 0121.75 12v.75m-8.69-6.44l-2.12-2.12a1.5 1.5 0 00-1.061-.44H4.5A2.25 2.25 0 002.25 6v12a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9a2.25 2.25 0 00-2.25-2.25h-5.379a1.5 1.5 0 01-1.06-.44z"/></svg>'+g+' <span class="ml-auto text-[10px]" style="color:var(--text-tertiary)">'+c+'</span></div>'});
+  document.getElementById('folder-list').innerHTML=fh;
+  // Filter select
+  let sh='<option value="">全部分组</option>';groups.forEach(g=>sh+='<option value="'+g+'"'+(fg===g?' selected':'')+'>'+g+'</option>');document.getElementById('filter-group').innerHTML=sh;
+  // Filter
+  const filtered=entries.filter(e=>{if(activeGroup&&e.group!==activeGroup)return false;if(fg&&e.group!==fg)return false;if(!q)return true;return(e.name+e.username+e.url+e.group).toLowerCase().includes(q)});
+  document.getElementById('filter-info').textContent='共 '+filtered.length+' 条';document.getElementById('entry-count').textContent=entries.length;
+  document.getElementById('page-info').textContent='第 1-'+filtered.length+' 条/总共 '+filtered.length+' 条';
+  // Table
+  let th='';filtered.forEach(e=>{
+    const str=evalStrength(e.password);const ago=timeAgo(e.updatedAt||e.createdAt);
+    th+=`<tr onclick="selectRow('${e.id}')" class="${activeId===e.id?'selected':''}">
+      <td><input type="checkbox" class="accent-brand-500"></td>
+      <td><div class="flex items-center gap-2.5">
+        <div class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 text-xs font-bold" style="background:${groupColor(e.group)};color:white">${(e.name||'?')[0].toUpperCase()}</div>
+        <div><div class="font-medium text-[13px]">${e.name||'未命名'}</div><div class="text-[10px]" style="color:var(--text-tertiary)">${e.username||''}</div></div></div></td>
+      <td><span class="type-badge" style="background:rgba(59,130,246,0.1);color:#2563EB">账号密码</span>
+        <div class="text-[10px] mt-1" style="color:var(--text-tertiary)">${str.l} · ${e.password?e.password.length+'位':'--'}</div></td>
+      <td><div id="pwd-cell-${e.id}"><span class="pwd-dots text-xs">••••••••</span></div>
+        ${e.url?'<div class="text-[10px] mt-0.5 truncate" style="color:var(--text-tertiary);max-width:160px"><a href="'+e.url+'" target="_blank" style="color:var(--brand-500);text-decoration:none">'+e.url.replace(/^https?:\/\//,'').slice(0,30)+'</a></div>':''}</td>
+      <td>${e.group?'<span class="tag" style="background:rgba(6,182,212,0.1);color:#0891B2;border:1px solid rgba(6,182,212,0.2)">'+e.group+'</span>':''}</td>
+      <td><div class="text-xs" style="color:var(--text-secondary)">${ago}</div></td>
+      <td><div class="flex items-center gap-1">
+        <button onclick="event.stopPropagation();togglePwd('${e.id}')" class="btn btn-ghost btn-xs" title="查看密码"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg></button>
+        <button onclick="event.stopPropagation();openEdit('${e.id}')" class="btn btn-ghost btn-xs" title="编辑"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z"/></svg></button>
+        <button onclick="event.stopPropagation();deleteEntry('${e.id}')" class="btn btn-ghost btn-xs" style="color:var(--danger)" title="删除"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79"/></svg></button>
+      </div></td>
+    </tr>`;
+  });
+  document.getElementById('vault-tbody').innerHTML=th||`<tr><td colspan="7" class="text-center py-16">
+    <div class="w-16 h-16 rounded-2xl mx-auto mb-4 flex items-center justify-center" style="background:var(--bg-tertiary)">
+      <svg class="w-8 h-8 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1"><path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z"/></svg>
+    </div>
+    <div class="text-sm font-medium mb-1" style="color:var(--text-primary)">保险箱为空</div>
+    <div class="text-xs mb-4" style="color:var(--text-tertiary)">点击上方「添加新项目」按钮开始存储你的密码</div>
+    <button onclick="openAdd()" class="btn btn-primary btn-sm"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>添加第一个条目</button>
+  </td></tr>`;
+}
+
+function selectRow(id){activeId=id;render()}
+
+// 密码显示状态
+const _pwdVisible={};
+function togglePwd(id){
+  _pwdVisible[id]=!_pwdVisible[id];
+  const e=entries.find(x=>x.id===id);
+  if(e){
+    // 复制到剪贴板
+    navigator.clipboard.writeText(e.password).catch(()=>{});
+    logAudit('查看','查看了: '+e.name);
+    // 在表格中高亮显示 3 秒
+    const cell=document.getElementById('pwd-cell-'+id);
+    if(cell){
+      cell.innerHTML=_pwdVisible[id]
+        ?'<span class="font-mono text-xs" style="color:var(--brand-600)">'+e.password+'</span> <span class="text-[9px]" style="color:var(--success)">已复制</span>'
+        :'<span class="pwd-dots text-xs">••••••••</span>';
+      if(_pwdVisible[id])setTimeout(()=>{_pwdVisible[id]=false;if(cell)cell.innerHTML='<span class="pwd-dots text-xs">••••••••</span>'},5000);
+    }
+  }
+}
+function timeAgo(ts){if(!ts)return'--';const s=Math.floor((Date.now()-ts)/1000);if(s<60)return'刚刚';const m=Math.floor(s/60);if(m<60)return m+'分钟前';const h=Math.floor(m/60);if(h<24)return h+'小时前';const d=Math.floor(h/24);return new Date(ts).toLocaleString('zh-CN')}
+
+// CRUD
+function openAdd(){editId=null;document.getElementById('modal-title').textContent='添加新项目';['f-name','f-user','f-pwd','f-url','f-group','f-notes'].forEach(id=>document.getElementById(id).value='');document.getElementById('modal-overlay').classList.add('visible')}
+function openEdit(id){const e=entries.find(x=>x.id===id);if(!e)return;editId=id;document.getElementById('modal-title').textContent='编辑条目';document.getElementById('f-name').value=e.name;document.getElementById('f-user').value=e.username;document.getElementById('f-pwd').value=e.password;document.getElementById('f-url').value=e.url;document.getElementById('f-group').value=e.group;document.getElementById('f-notes').value=e.notes;document.getElementById('modal-overlay').classList.add('visible')}
+function closeModal(){document.getElementById('modal-overlay').classList.remove('visible')}
+function saveEntry(){const e={id:editId||crypto.randomUUID(),name:document.getElementById('f-name').value,username:document.getElementById('f-user').value,password:document.getElementById('f-pwd').value,url:document.getElementById('f-url').value,group:document.getElementById('f-group').value,notes:document.getElementById('f-notes').value,pwdChangedAt:Date.now(),createdAt:Date.now(),updatedAt:Date.now()};if(editId){const i=entries.findIndex(x=>x.id===editId);if(i>=0){e.createdAt=entries[i].createdAt;if(entries[i].password===e.password)e.pwdChangedAt=entries[i].pwdChangedAt;entries[i]=e}}else entries.unshift(e);activeId=e.id;persist();closeModal();render();logAudit(editId?'编辑':'添加',e.name)}
+function deleteEntry(id){if(!confirm('确认删除？'))return;const e=entries.find(x=>x.id===id);entries=entries.filter(x=>x.id!==id);if(activeId===id)activeId=null;persist();render();logAudit('删除',e?.name||id)}
+
+// Generator
+function doGenerate(){let cs='';const lower=document.getElementById('gen-lower').checked,upper=document.getElementById('gen-upper').checked,digits=document.getElementById('gen-digits').checked,symbols=document.getElementById('gen-symbols').checked;if(lower)cs+='abcdefghijklmnopqrstuvwxyz';if(upper)cs+='ABCDEFGHIJKLMNOPQRSTUVWXYZ';if(digits)cs+='0123456789';if(symbols)cs+='!@#$%^&*()_+-=[]{}|;:,.<>?';if(!cs){alert('请至少选择一种字符类型');return}const len=parseInt(document.getElementById('gen-len').value),arr=crypto.getRandomValues(new Uint32Array(len));let pw='';for(let i=0;i<len;i++)pw+=cs[arr[i]%cs.length];document.getElementById('gen-result').textContent=pw;const s=evalStrength(pw);document.getElementById('gen-str-bar').style.width=s.w+'%';document.getElementById('gen-str-bar').className='gen-bar '+s.c;document.getElementById('gen-str-label').textContent=s.l}
+function copyGenResult(){const t=document.getElementById('gen-result').textContent;if(t&&t!=='点击"生成"开始'){navigator.clipboard.writeText(t);showToast('已复制到剪贴板')}}
+function fillGenPwd(){let cs='abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*';const arr=crypto.getRandomValues(new Uint32Array(20));let pw='';for(let i=0;i<20;i++)pw+=cs[arr[i]%cs.length];document.getElementById('f-pwd').value=pw;document.getElementById('f-pwd').dispatchEvent(new Event('input'))}
+
+// Audit
+function runAudit(){const weak=entries.filter(e=>{if(!e.password)return false;return evalStrength(e.password).w<=25});const pwdMap={};entries.forEach(e=>{if(!e.password)return;if(!pwdMap[e.password])pwdMap[e.password]=[];pwdMap[e.password].push(e)});const reused=Object.values(pwdMap).filter(g=>g.length>=2);const now=Date.now(),old=entries.filter(e=>e.password&&(now-(e.pwdChangedAt||e.createdAt))>90*86400000);
+  const total=entries.length,issues=weak.length+reused.length*2+old.length;const score=total?Math.max(0,Math.round(100-issues/total*100)):100;
+  document.getElementById('audit-score').textContent=score;document.getElementById('audit-weak').textContent=weak.length;document.getElementById('audit-reused').textContent=reused.length;document.getElementById('audit-old').textContent=old.length;
+  let rh='';if(weak.length)rh+='<div class="card p-4"><div class="flex items-center gap-2 mb-2"><span class="w-2 h-2 rounded-full bg-red-500"></span><span class="text-xs font-semibold" style="color:var(--danger)">弱密码 ('+weak.length+')</span></div><div class="space-y-1">'+weak.map(e=>'<div class="text-xs py-1 px-2 rounded" style="background:var(--bg-tertiary);color:var(--text-primary)">'+e.name+' <span style="color:var(--text-tertiary)">— '+evalStrength(e.password).l+'</span></div>').join('')+'</div></div>';
+  if(reused.length)rh+='<div class="card p-4"><div class="flex items-center gap-2 mb-2"><span class="w-2 h-2 rounded-full bg-amber-500"></span><span class="text-xs font-semibold" style="color:var(--warning)">重复密码 ('+reused.length+' 组)</span></div><div class="space-y-1">'+reused.map(g=>'<div class="text-xs py-1 px-2 rounded" style="background:var(--bg-tertiary);color:var(--text-primary)">'+g.map(e=>e.name).join(', ')+'</div>').join('')+'</div></div>';
+  if(old.length)rh+='<div class="card p-4"><div class="flex items-center gap-2 mb-2"><span class="w-2 h-2 rounded-full bg-orange-500"></span><span class="text-xs font-semibold" style="color:#EA580C">过期密码 ('+old.length+')</span></div><div class="space-y-1">'+old.map(e=>'<div class="text-xs py-1 px-2 rounded" style="background:var(--bg-tertiary);color:var(--text-primary)">'+e.name+' <span style="color:var(--text-tertiary)">— '+Math.floor((now-(e.pwdChangedAt||e.createdAt))/86400000)+'天未更新</span></div>').join('')+'</div></div>';
+  if(!rh)rh='<div class="card p-8 text-center"><svg class="w-10 h-10 mx-auto mb-2 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z"/></svg><div class="text-sm font-semibold" style="color:var(--text-primary)">安全状态良好</div><div class="text-xs" style="color:var(--text-secondary)">未发现安全问题</div></div>';
+  document.getElementById('audit-results').innerHTML=rh}
+
+// Audit log
+function logAudit(type,detail){auditLog.unshift({type,detail,time:Date.now(),ip:'本地',browser:navigator.userAgent.slice(0,60)});if(auditLog.length>50)auditLog.pop()}
+
+// Export
+function exportCSV(){const header='名称,用户名,密码,网址,分组,备注\n';const rows=entries.map(e=>[e.name,e.username,e.password,e.url,e.group,e.notes].map(v=>'"'+(v||'').replace(/"/g,'""')+'"').join(',')).join('\n');const blob=new Blob([header+rows],{type:'text/csv'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='spc-vault-'+new Date().toISOString().slice(0,10)+'.csv';a.click()}
+function importCSV(input){const file=input.files[0];if(!file)return;const reader=new FileReader();reader.onload=e=>{const lines=e.target.result.split('\n').filter(l=>l.trim());for(let i=1;i<lines.length;i++){const c=lines[i].split(',').map(v=>v.replace(/^"|"$/g,''));entries.push({id:crypto.randomUUID(),name:c[0]||'',username:c[1]||'',password:c[2]||'',url:c[3]||'',group:c[4]||'',notes:c[5]||'',pwdChangedAt:Date.now(),createdAt:Date.now(),updatedAt:Date.now()})}persist();render();alert('导入成功: '+(lines.length-1)+' 条')};reader.readAsText(file)}
+
+// Toast notification
+function showToast(msg){const t=document.createElement('div');t.style.cssText='position:fixed;bottom:20px;right:20px;z-index:99999;padding:10px 18px;border-radius:12px;font-size:13px;box-shadow:0 10px 30px rgba(0,0,0,0.12);animation:fadeIn .2s ease-out;display:flex;align-items:center;gap:6px;background:var(--bg-elevated);border:1px solid var(--border-default);color:var(--text-primary)';t.innerHTML='<svg class="w-4 h-4" style="color:#22C55E" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>'+msg;document.body.appendChild(t);setTimeout(()=>{t.style.opacity='0';t.style.transform='translateX(30px)';t.style.transition='all .3s';setTimeout(()=>t.remove(),300)},2500)}
+
+// Keyboard shortcuts
+document.addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key==='n'){e.preventDefault();if(!masterKey)return;openAdd()}});
+
+init();
+</script>
+</body>
+</html>

@@ -1,0 +1,19 @@
+{
+  "name": "spc-productivity-center",
+  "version": "2.0.0",
+  "description": "SPC - 安全生产力中枢 (本地优先 + 云同步)",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "keywords": [
+    "productivity",
+    "notes",
+    "tasks",
+    "password-manager",
+    "pwa"
+  ],
+  "author": "SPC Team",
+  "license": "MIT"
+}

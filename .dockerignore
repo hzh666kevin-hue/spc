@@ -1,0 +1,6 @@
+# Docker ignore
+.git
+.gitignore
+*.md
+启动本地服务器.bat
+Dockerfile

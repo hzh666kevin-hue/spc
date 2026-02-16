@@ -1,0 +1,468 @@
+/**
+ * SPC Safe — KeeWeb 亮色主题强制覆盖
+ * =====================================
+ * 暴力覆盖 KeeWeb 深色模式，统一为企业级亮色界面。
+ * 配色对齐 SPC 主外壳: Slate-50 侧栏, 纯白内容, Brand-600 蓝色强调。
+ *
+ * 引入方式: 在 safe/index.html 的 <head> 末尾添加:
+ *   <link rel="stylesheet" href="custom-theme.css" />
+ */
+
+/* ═══════════════════════════════════════
+   全局根覆盖
+   ═══════════════════════════════════════ */
+
+:root {
+  --background-color:       #FFFFFF !important;
+  --background-alt-color:   #F8FAFC !important;
+  --text-color:             #1E293B !important;
+  --text-semi-muted-color:  #475569 !important;
+  --text-muted-color:       #94A3B8 !important;
+  --border-color:           #E2E8F0 !important;
+  --action-color:           #2563EB !important;
+  --action-hover-color:     #1D4ED8 !important;
+  --selected-color:         #EFF6FF !important;
+  --selected-text-color:    #2563EB !important;
+  --header-color:           #F8FAFC !important;
+  --error-color:            #EF4444 !important;
+  --success-color:          #22C55E !important;
+  --warning-color:          #F59E0B !important;
+}
+
+/* ═══════════════════════════════════════
+   Body & HTML 基础
+   ═══════════════════════════════════════ */
+
+html, body,
+.app, .app__body,
+#app, #root,
+.main-window,
+.app-container {
+  background:    #FFFFFF !important;
+  background-color: #FFFFFF !important;
+  color:         #1E293B !important;
+}
+
+/* ═══════════════════════════════════════
+   顶部栏 / Header
+   ═══════════════════════════════════════ */
+
+.header,
+.header-title,
+.header__title,
+header,
+.app-header,
+.toolbar,
+.top-bar {
+  background:    #F8FAFC !important;
+  border-bottom: 1px solid #E2E8F0 !important;
+  color:         #1E293B !important;
+  box-shadow:    none !important;
+}
+
+.header__btn,
+.header .btn,
+.toolbar .btn {
+  color:         #64748B !important;
+  background:    transparent !important;
+}
+
+.header__btn:hover,
+.header .btn:hover,
+.toolbar .btn:hover {
+  color:         #2563EB !important;
+  background:    #EFF6FF !important;
+}
+
+/* ═══════════════════════════════════════
+   侧边栏 / 列表面板
+   ═══════════════════════════════════════ */
+
+.list-wrap,
+.list__body,
+.list,
+.menu,
+.sidebar,
+.panel-left,
+.left-panel,
+.app__panel,
+.grp-panel,
+.grp-panel__body {
+  background:    #F8FAFC !important;
+  border-right:  1px solid #E2E8F0 !important;
+  color:         #334155 !important;
+}
+
+/* 列表项 */
+.list__item,
+.list-item,
+.grp-panel__item {
+  color:         #334155 !important;
+  border-bottom: 1px solid #F1F5F9 !important;
+  background:    transparent !important;
+}
+
+.list__item:hover,
+.list-item:hover,
+.grp-panel__item:hover {
+  background:    #F1F5F9 !important;
+}
+
+/* 列表项选中 */
+.list__item--active,
+.list-item--active,
+.list__item.active,
+.list-item.active,
+.grp-panel__item--active {
+  background:    #EFF6FF !important;
+  color:         #2563EB !important;
+  border-left:   3px solid #2563EB !important;
+  font-weight:   500 !important;
+}
+
+.list__item--active .list__item-title,
+.list-item--active .title {
+  color:         #2563EB !important;
+}
+
+/* ═══════════════════════════════════════
+   详情面板 / 主内容
+   ═══════════════════════════════════════ */
+
+.details,
+.details__body,
+.detail-panel,
+.panel-right,
+.right-panel,
+.main-content,
+.content-area {
+  background:    #FFFFFF !important;
+  color:         #1E293B !important;
+}
+
+/* 详情字段 */
+.details__field,
+.detail-field,
+.field-row {
+  border-bottom: 1px solid #F1F5F9 !important;
+}
+
+.details__field-label,
+.detail-field__label,
+.field-label {
+  color:         #94A3B8 !important;
+  font-size:     11px !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.05em !important;
+}
+
+.details__field-value,
+.detail-field__value,
+.field-value {
+  color:         #1E293B !important;
+}
+
+/* 密码字段 */
+.details__field-value--password,
+.field-value--protected {
+  font-family:   'JetBrains Mono', 'Fira Code', monospace !important;
+  color:         #1E293B !important;
+}
+
+/* ═══════════════════════════════════════
+   按钮
+   ═══════════════════════════════════════ */
+
+.btn,
+button,
+.button {
+  border-radius: 8px !important;
+}
+
+.btn-primary,
+.btn--primary,
+.btn-action {
+  background:    #2563EB !important;
+  color:         #FFFFFF !important;
+  border:        none !important;
+  box-shadow:    0 1px 2px rgba(37,99,235,0.2) !important;
+}
+
+.btn-primary:hover,
+.btn--primary:hover,
+.btn-action:hover {
+  background:    #1D4ED8 !important;
+}
+
+.btn-default,
+.btn--default,
+.btn-secondary {
+  background:    #F8FAFC !important;
+  color:         #334155 !important;
+  border:        1px solid #E2E8F0 !important;
+}
+
+.btn-default:hover,
+.btn--default:hover,
+.btn-secondary:hover {
+  background:    #F1F5F9 !important;
+  border-color:  #CBD5E1 !important;
+}
+
+/* ═══════════════════════════════════════
+   输入框
+   ═══════════════════════════════════════ */
+
+input, textarea, select,
+.input, .textarea,
+.form-control {
+  background:    #F8FAFC !important;
+  color:         #1E293B !important;
+  border:        1px solid #E2E8F0 !important;
+  border-radius: 8px !important;
+  outline:       none !important;
+}
+
+input:focus, textarea:focus, select:focus,
+.input:focus, .textarea:focus,
+.form-control:focus {
+  border-color:  #2563EB !important;
+  box-shadow:    0 0 0 3px rgba(37,99,235,0.1) !important;
+  background:    #FFFFFF !important;
+}
+
+input::placeholder,
+textarea::placeholder,
+.input::placeholder {
+  color:         #94A3B8 !important;
+}
+
+/* ═══════════════════════════════════════
+   模态框 / 弹窗
+   ═══════════════════════════════════════ */
+
+.modal,
+.modal__body,
+.dialog,
+.popup,
+.open-db,
+.settings {
+  background:    #FFFFFF !important;
+  color:         #1E293B !important;
+  border:        1px solid #E2E8F0 !important;
+  border-radius: 16px !important;
+  box-shadow:    0 25px 50px -12px rgba(0,0,0,0.12) !important;
+}
+
+.modal-header,
+.dialog-header {
+  background:    #F8FAFC !important;
+  border-bottom: 1px solid #E2E8F0 !important;
+}
+
+/* 遮罩层 */
+.modal-backdrop,
+.overlay,
+.backdrop {
+  background:    rgba(15,23,42,0.3) !important;
+  backdrop-filter: blur(4px) !important;
+}
+
+/* ═══════════════════════════════════════
+   密码生成器
+   ═══════════════════════════════════════ */
+
+.gen__btn,
+.generator__btn {
+  background:    #EFF6FF !important;
+  color:         #2563EB !important;
+  border:        1px solid #BFDBFE !important;
+}
+
+.gen__btn:hover,
+.generator__btn:hover {
+  background:    #DBEAFE !important;
+}
+
+.gen__result,
+.generator__result {
+  background:    #F8FAFC !important;
+  color:         #1E293B !important;
+  font-family:   'JetBrains Mono', monospace !important;
+  border:        1px solid #E2E8F0 !important;
+  border-radius: 8px !important;
+}
+
+/* ═══════════════════════════════════════
+   密码强度指示器
+   ═══════════════════════════════════════ */
+
+.password-strength__bar {
+  background:    #E2E8F0 !important;
+  border-radius: 99px !important;
+}
+
+/* ═══════════════════════════════════════
+   搜索框
+   ═══════════════════════════════════════ */
+
+.search,
+.search__input,
+.list-search,
+.filter-input {
+  background:    #F1F5F9 !important;
+  border:        1px solid #E2E8F0 !important;
+  color:         #1E293B !important;
+  border-radius: 10px !important;
+}
+
+.search:focus-within,
+.search__input:focus {
+  background:    #FFFFFF !important;
+  border-color:  #2563EB !important;
+  box-shadow:    0 0 0 3px rgba(37,99,235,0.1) !important;
+}
+
+/* ═══════════════════════════════════════
+   图标 & SVG
+   ═══════════════════════════════════════ */
+
+.icon, .fa, i[class*="fa-"],
+svg {
+  color:         inherit !important;
+  fill:          currentColor !important;
+}
+
+/* ═══════════════════════════════════════
+   滚动条 (亮色风格)
+   ═══════════════════════════════════════ */
+
+::-webkit-scrollbar {
+  width:         6px !important;
+  height:        6px !important;
+}
+
+::-webkit-scrollbar-track {
+  background:    transparent !important;
+}
+
+::-webkit-scrollbar-thumb {
+  background:    #CBD5E1 !important;
+  border-radius: 99px !important;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background:    #94A3B8 !important;
+}
+
+/* ═══════════════════════════════════════
+   标签 & 徽章
+   ═══════════════════════════════════════ */
+
+.tag,
+.badge,
+.label,
+.chip {
+  background:    #EFF6FF !important;
+  color:         #2563EB !important;
+  border:        1px solid #BFDBFE !important;
+  border-radius: 6px !important;
+  font-size:     11px !important;
+}
+
+/* ═══════════════════════════════════════
+   上下文菜单
+   ═══════════════════════════════════════ */
+
+.context-menu,
+.dropdown-menu,
+.menu-dropdown {
+  background:    #FFFFFF !important;
+  border:        1px solid #E2E8F0 !important;
+  border-radius: 12px !important;
+  box-shadow:    0 10px 30px rgba(0,0,0,0.08) !important;
+  color:         #1E293B !important;
+}
+
+.context-menu__item,
+.dropdown-menu__item,
+.menu-item {
+  color:         #334155 !important;
+}
+
+.context-menu__item:hover,
+.dropdown-menu__item:hover,
+.menu-item:hover {
+  background:    #EFF6FF !important;
+  color:         #2563EB !important;
+}
+
+/* ═══════════════════════════════════════
+   表格
+   ═══════════════════════════════════════ */
+
+table, .table {
+  color:         #1E293B !important;
+}
+
+th {
+  background:    #F8FAFC !important;
+  color:         #64748B !important;
+  border-bottom: 2px solid #E2E8F0 !important;
+  font-weight:   600 !important;
+  text-transform: uppercase !important;
+  font-size:     11px !important;
+  letter-spacing: 0.05em !important;
+}
+
+td {
+  border-bottom: 1px solid #F1F5F9 !important;
+}
+
+tr:hover {
+  background:    #F8FAFC !important;
+}
+
+/* ═══════════════════════════════════════
+   Footer / 底栏
+   ═══════════════════════════════════════ */
+
+.footer,
+.status-bar,
+.app-footer {
+  background:    #F8FAFC !important;
+  border-top:    1px solid #E2E8F0 !important;
+  color:         #94A3B8 !important;
+}
+
+/* ═══════════════════════════════════════
+   杂项: 链接、选中、焦点
+   ═══════════════════════════════════════ */
+
+a, .link {
+  color:         #2563EB !important;
+}
+
+a:hover, .link:hover {
+  color:         #1D4ED8 !important;
+}
+
+::selection {
+  background:    #BFDBFE !important;
+  color:         #1E3A8A !important;
+}
+
+/* 所有深色背景的暴力清除 */
+[style*="background-color: rgb(0"],
+[style*="background-color: #0"],
+[style*="background-color: #1"],
+[style*="background-color: #2"],
+[style*="background-color: #3"],
+[style*="background: rgb(0"],
+[style*="background: #0"],
+[style*="background: #1"],
+[style*="background: #2"],
+[style*="background: #3"] {
+  background:    #F8FAFC !important;
+  background-color: #F8FAFC !important;
+}
