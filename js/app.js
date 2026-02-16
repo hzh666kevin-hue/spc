@@ -55,13 +55,6 @@ const SPC = (() => {
   async function boot() {
     console.log('%c[SPC] 内核引导中...', 'color: #2563eb; font-weight: bold; font-size: 13px');
     const t0 = performance.now();
-    
-    // 监听 iframe 消息（用于子页面导航）
-    window.addEventListener('message', (event) => {
-      if (event.data && event.data.action === 'navigate') {
-        navigate(event.data.module || 'home');
-      }
-    });
 
     // 首先初始化账户系统
     AuthUI.init();
@@ -728,22 +721,30 @@ const SPC = (() => {
     toggleCloudUrl(show) {
       document.getElementById('cloud-url-container').style.display = show ? 'block' : 'none';
       document.getElementById('reg-cloud-url-container').style.display = show ? 'block' : 'none';
+      document.getElementById('sync-password-container').style.display = show ? 'block' : 'none';
+      document.getElementById('reg-sync-password-container').style.display = show ? 'block' : 'none';
     },
     
     login() {
       const username = document.getElementById('login-username').value.trim();
       const password = document.getElementById('login-password').value;
       const cloudUrl = document.getElementById('login-cloud-url').value.trim();
+      const syncPassword = document.getElementById('login-sync-password').value;
       
       if (!username) {
         this.showError('请输入用户名');
         return;
       }
       
-      const result = AuthService.login(username, password, cloudUrl);
+      const result = AuthService.login(username, password, cloudUrl, syncPassword);
       if (!result.success) {
         this.showError(result.error);
         return;
+      }
+      
+      // 如果是云端模式且填写了同步密码，设置加密密钥
+      if (result.user && result.user.mode === 'cloud' && syncPassword) {
+        AuthService.setSyncKey(syncPassword);
       }
       
       this.hideError();
@@ -754,16 +755,23 @@ const SPC = (() => {
       const password = document.getElementById('reg-password').value;
       const mode = document.querySelector('input[name="storage-mode"]:checked').value;
       const cloudUrl = document.getElementById('reg-cloud-url').value.trim();
+      const syncPassword = document.getElementById('reg-sync-password').value;
       
       if (!username) {
         this.showError('请输入用户名');
         return;
       }
       
-      // 云端模式需要密码
-      if (mode === 'cloud' && !password) {
-        this.showError('云端模式需要设置密码');
-        return;
+      // 云端模式需要密码和同步密码
+      if (mode === 'cloud') {
+        if (!password) {
+          this.showError('云端模式需要设置登录密码');
+          return;
+        }
+        if (!syncPassword) {
+          this.showError('云端模式需要设置同步密码（用于加密数据）');
+          return;
+        }
       }
       
       if (mode === 'cloud' && !cloudUrl) {
@@ -773,7 +781,8 @@ const SPC = (() => {
       
       const result = AuthService.createUser(username, password, {
         mode: mode,
-        cloudUrl: cloudUrl
+        cloudUrl: cloudUrl,
+        syncPassword: syncPassword
       });
       
       if (!result.success) {
